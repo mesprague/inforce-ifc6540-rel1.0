@@ -1,0 +1,54 @@
+From 02283c82ae873232160a7ee4916f8d4a0fd519c2 Mon Sep 17 00:00:00 2001
+From: Ilia Lin <ilialin@codeaurora.org>
+Date: Tue, 11 Mar 2014 14:00:59 +0200
+Subject: [PATCH] init: Set ro.sf.lcd_density for SBC APQ8084
+
+Set the property ro.sf.lcd_density value to comply the
+SBC APQ8084 display size.
+qemu.hw.mainkeys is set to 0, because SBC is headless device
+and doesn't have HW buttons.
+
+Change-Id: I3e4e56245f95a061ea218f16c0af3f10a797ad4b
+---
+ init/init_apq8084.c                 |    7 +++++++
+ rootdir/etc/init.qcom.early_boot.sh |    6 ++++++
+ 2 files changed, 13 insertions(+)
+
+diff --git a/init/init_apq8084.c b/init/init_apq8084.c
+index 0b579aa..e7181ea 100644
+--- a/init/init_apq8084.c
++++ b/init/init_apq8084.c
+@@ -55,6 +55,13 @@ void init_msm_properties(unsigned long msm_id, unsigned long msm_ver, char *boar
+          */
+         property_set(PROP_QEMU_NAVKEY, "0");
+     }
++    else if (ISMATCH(board_type, "SBC")) {
++        property_set(PROP_LCDDENSITY, "200");
++        /* SBC does not have hardware navigation keys, so enable
++           Android sw navigation bar
++         */
++        property_set(PROP_QEMU_NAVKEY, "0");
++    }
+     else {
+         property_set(PROP_LCDDENSITY, "480");
+     }
+diff --git a/rootdir/etc/init.qcom.early_boot.sh b/rootdir/etc/init.qcom.early_boot.sh
+index 07f6776..a8bcf09 100755
+--- a/rootdir/etc/init.qcom.early_boot.sh
++++ b/rootdir/etc/init.qcom.early_boot.sh
+@@ -155,6 +155,12 @@ case "$1" in
+                 # Android sw navigation bar
+                 setprop ro.hw.nav_keys 0
+                 ;;
++            "SBC")
++                setprop ro.sf.lcd_density 200
++                # SBC do not have hardware navigation keys, so enable
++                # Android sw navigation bar
++                setprop qemu.hw.mainkeys 0
++                ;;
+             *)
+                 setprop ro.sf.lcd_density 480
+                 ;;
+-- 
+1.7.9.5
+

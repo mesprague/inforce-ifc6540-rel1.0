@@ -1,0 +1,47 @@
+From e46f96aaf01531fd3ef94f41abf1578a497d9577 Mon Sep 17 00:00:00 2001
+From: kalpana <kalpana@inforcecomputing.com>
+Date: Tue, 22 Jul 2014 14:57:13 +0530
+Subject: [PATCH] Audio: Chnages for audio in Android.mk
+
+Change-Id: I71e367eff47b5b3938284ebb6bc9f76e0d4f8112
+---
+ media/mediaserver/Android.mk     |    1 +
+ services/audioflinger/Android.mk |    3 +++
+ 2 files changed, 4 insertions(+)
+
+diff --git a/media/mediaserver/Android.mk b/media/mediaserver/Android.mk
+index 04c9c8c..57dc71d 100644
+--- a/media/mediaserver/Android.mk
++++ b/media/mediaserver/Android.mk
+@@ -37,6 +37,7 @@ LOCAL_C_INCLUDES := \
+ ifeq ($(strip $(AUDIO_FEATURE_ENABLED_LISTEN)),true)
+   LOCAL_SHARED_LIBRARIES += liblisten
+   LOCAL_C_INCLUDES += $(TARGET_OUT_HEADERS)/mm-audio/audio-listen
++  LOCAL_C_INCLUDES += $(TARGET_OUT_HEADERS)/mm-audio/audio-effects
+   LOCAL_CFLAGS += -DAUDIO_LISTEN_ENABLED
+ endif
+ 
+diff --git a/services/audioflinger/Android.mk b/services/audioflinger/Android.mk
+index 2eb4d88..dbd1f22 100644
+--- a/services/audioflinger/Android.mk
++++ b/services/audioflinger/Android.mk
+@@ -89,6 +89,8 @@ ifeq ($(call is-vendor-board-platform,QCOM),true)
+ ifeq ($(strip $(BOARD_USES_QCOM_RESAMPLER)),true)
+ LOCAL_SRC_FILES += AudioResamplerQTI.cpp.arm
+ LOCAL_C_INCLUDES += $(TARGET_OUT_HEADERS)/mm-audio/audio-src
++LOCAL_C_INCLUDES += $(TARGET_OUT_HEADERS)/mm-audio/audio-listen
++LOCAL_C_INCLUDES += $(TARGET_OUT_HEADERS)/mm-audio/audio-effects
+ LOCAL_SHARED_LIBRARIES += libqct_resampler
+ LOCAL_CFLAGS += -DQTI_RESAMPLER
+ endif
+@@ -118,6 +120,7 @@ ifeq ($(strip $(BOARD_USES_SRS_TRUEMEDIA)),true)
+ LOCAL_SHARED_LIBRARIES += libsrsprocessing
+ LOCAL_CFLAGS += -DSRS_PROCESSING
+ LOCAL_C_INCLUDES += $(TARGET_OUT_HEADERS)/mm-audio/audio-effects
++LOCAL_C_INCLUDES += $(TARGET_OUT_HEADERS)/mm-audio/audio-listen
+ endif
+ 
+ ifdef DOLBY_DAP
+-- 
+1.7.9.5
+

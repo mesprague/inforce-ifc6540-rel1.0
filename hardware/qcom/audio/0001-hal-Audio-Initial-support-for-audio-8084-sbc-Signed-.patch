@@ -1,0 +1,168 @@
+From 98cf77baf3d6870eeba8d1b5c0be40898e5ddc80 Mon Sep 17 00:00:00 2001
+From: Baji Patthan <bpatth@codeaurora.org>
+Date: Fri, 2 May 2014 10:44:17 -0700
+Subject: [PATCH] hal: Audio : Initial support for audio 8084 sbc
+ Signed-off-by: Baji Patthan <bpatth@codeaurora.org>
+
+Change-Id: I725b6ae218ba22d3f1d0aaab280313ba32499f6a
+---
+ hal/msm8974/hw_info.c             |   11 ++++++++++
+ policy_hal/Android.mk             |    3 +++
+ policy_hal/AudioPolicyManager.cpp |   40 +++++++++++++++++++++++++++++++++++++
+ policy_hal/AudioPolicyManager.h   |   12 ++++++++++-
+ 4 files changed, 65 insertions(+), 1 deletion(-)
+
+diff --git a/hal/msm8974/hw_info.c b/hal/msm8974/hw_info.c
+index d59f727..515bbf3 100644
+--- a/hal/msm8974/hw_info.c
++++ b/hal/msm8974/hw_info.c
+@@ -92,6 +92,11 @@ static const snd_device_t taiko_DB_variant_devices[] = {
+     SND_DEVICE_IN_QUAD_MIC,
+ };
+ 
++static const snd_device_t taiko_apq8084_sbc_variant_devices[] = {
++    SND_DEVICE_IN_HANDSET_MIC,
++    SND_DEVICE_IN_SPEAKER_MIC,
++};
++
+ static const snd_device_t tapan_lite_variant_devices[] = {
+     SND_DEVICE_OUT_SPEAKER,
+     SND_DEVICE_OUT_HEADPHONES,
+@@ -156,6 +161,12 @@ static void  update_hardware_info_8084(struct hardware_info *hw_info, const char
+         hw_info->snd_devices = (snd_device_t *)taiko_liquid_variant_devices;
+         hw_info->num_snd_devices = ARRAY_SIZE(taiko_liquid_variant_devices);
+         strlcpy(hw_info->dev_extn, "-liquid", sizeof(hw_info->dev_extn));
++    } else if (!strcmp(snd_card_name, "apq8084-taiko-sbc-snd-card")) {
++        strlcpy(hw_info->type, " sbc", sizeof(hw_info->type));
++        strlcpy(hw_info->name, "apq8084", sizeof(hw_info->name));
++        hw_info->snd_devices = (snd_device_t *)taiko_apq8084_sbc_variant_devices;
++        hw_info->num_snd_devices = ARRAY_SIZE(taiko_apq8084_sbc_variant_devices);
++        strlcpy(hw_info->dev_extn, "-sbc", sizeof(hw_info->dev_extn));
+     } else {
+         ALOGW("%s: Not an 8084 device", __func__);
+     }
+diff --git a/policy_hal/Android.mk b/policy_hal/Android.mk
+index c68ab6e..4f3a737 100644
+--- a/policy_hal/Android.mk
++++ b/policy_hal/Android.mk
+@@ -29,6 +29,9 @@ endif
+ ifneq ($(strip $(AUDIO_FEATURE_DISABLED_INCALL_MUSIC)),true)
+ LOCAL_CFLAGS += -DAUDIO_EXTN_INCALL_MUSIC_ENABLED
+ endif
++ifneq ($(strip $(AUDIO_FEATURE_DISABLED_HDMI_SPK)),true)
++LOCAL_CFLAGS += -DAUDIO_EXTN_HDMI_SPK_ENABLED
++endif
+ 
+ 
+ ifeq ($(strip $(TARGET_BOARD_PLATFORM)),msm8916)
+diff --git a/policy_hal/AudioPolicyManager.cpp b/policy_hal/AudioPolicyManager.cpp
+index a774c9e..8947456 100644
+--- a/policy_hal/AudioPolicyManager.cpp
++++ b/policy_hal/AudioPolicyManager.cpp
+@@ -44,6 +44,7 @@ namespace android_audio_legacy {
+ // ----------------------------------------------------------------------------
+ // AudioPolicyInterface implementation
+ // ----------------------------------------------------------------------------
++const char* AudioPolicyManager::HDMI_SPKR_STR = "hdmi_spkr";
+ 
+ status_t AudioPolicyManager::setDeviceConnectionState(audio_devices_t device,
+                                                       AudioSystem::device_connection_state state,
+@@ -85,6 +86,15 @@ status_t AudioPolicyManager::setDeviceConnectionState(audio_devices_t device,
+         // handle output device connection
+         case AudioSystem::DEVICE_STATE_AVAILABLE:
+             if (mAvailableOutputDevices & device) {
++#ifdef AUDIO_EXTN_HDMI_SPK_ENABLED
++                if ((popcount(device) == 1) && (device & AUDIO_DEVICE_OUT_AUX_DIGITAL)) {
++                   if (!strncmp(device_address, HDMI_SPKR_STR, MAX_DEVICE_ADDRESS_LEN)) {
++                        mHdmiAudioDisabled = false;
++                    } else {
++                        mHdmiAudioEvent = true;
++                    }
++                }
++#endif
+                 ALOGW("setDeviceConnectionState() device already connected: %x", device);
+                 return INVALID_OPERATION;
+             }
+@@ -98,6 +108,18 @@ status_t AudioPolicyManager::setDeviceConnectionState(audio_devices_t device,
+             // register new device as available
+             mAvailableOutputDevices = (audio_devices_t)(mAvailableOutputDevices | device);
+ 
++#ifdef AUDIO_EXTN_HDMI_SPK_ENABLED
++            if ((popcount(device) == 1) && (device & AUDIO_DEVICE_OUT_AUX_DIGITAL)) {
++                if (!strncmp(device_address, HDMI_SPKR_STR, MAX_DEVICE_ADDRESS_LEN)) {
++                    mHdmiAudioDisabled = false;
++                } else {
++                    mHdmiAudioEvent = true;
++                }
++                if (mHdmiAudioDisabled || !mHdmiAudioEvent) {
++                    mAvailableOutputDevices = (audio_devices_t)(mAvailableOutputDevices & ~device);
++                }
++            }
++#endif
+             if (!outputs.isEmpty()) {
+                 String8 paramStr;
+                 if (mHasA2dp && audio_is_a2dp_device(device)) {
+@@ -127,6 +149,15 @@ status_t AudioPolicyManager::setDeviceConnectionState(audio_devices_t device,
+         // handle output device disconnection
+         case AudioSystem::DEVICE_STATE_UNAVAILABLE: {
+             if (!(mAvailableOutputDevices & device)) {
++#ifdef AUDIO_EXTN_HDMI_SPK_ENABLED
++                if ((popcount(device) == 1) && (device & AUDIO_DEVICE_OUT_AUX_DIGITAL)) {
++                    if (!strncmp(device_address, HDMI_SPKR_STR, MAX_DEVICE_ADDRESS_LEN)) {
++                        mHdmiAudioDisabled = true;
++                    } else {
++                        mHdmiAudioEvent = false;
++                    }
++                }
++#endif
+                 ALOGW("setDeviceConnectionState() device not connected: %x", device);
+                 return INVALID_OPERATION;
+             }
+@@ -135,6 +166,15 @@ status_t AudioPolicyManager::setDeviceConnectionState(audio_devices_t device,
+             // remove device from available output devices
+             mAvailableOutputDevices = (audio_devices_t)(mAvailableOutputDevices & ~device);
+ 
++#ifdef AUDIO_EXTN_HDMI_SPK_ENABLED
++            if ((popcount(device) == 1) && (device & AUDIO_DEVICE_OUT_AUX_DIGITAL)) {
++                if (!strncmp(device_address, HDMI_SPKR_STR, MAX_DEVICE_ADDRESS_LEN)) {
++                    mHdmiAudioDisabled = true;
++                } else {
++                    mHdmiAudioEvent = false;
++                }
++            }
++#endif
+             checkOutputsForDevice(device, state, outputs);
+             if (mHasA2dp && audio_is_a2dp_device(device)) {
+                 // handle A2DP device disconnection
+diff --git a/policy_hal/AudioPolicyManager.h b/policy_hal/AudioPolicyManager.h
+index 34ca701..110fe5e 100644
+--- a/policy_hal/AudioPolicyManager.h
++++ b/policy_hal/AudioPolicyManager.h
+@@ -35,7 +35,9 @@ class AudioPolicyManager: public AudioPolicyManagerBase
+ 
+ public:
+                 AudioPolicyManager(AudioPolicyClientInterface *clientInterface)
+-                : AudioPolicyManagerBase(clientInterface) {}
++                : AudioPolicyManagerBase(clientInterface) {
++                    mHdmiAudioDisabled = false;
++                    mHdmiAudioEvent = false; }
+ 
+         virtual ~AudioPolicyManager() {}
+ 
+@@ -89,5 +91,13 @@ protected:
+         // returns the category the device belongs to with regard to volume curve management
+         static device_category getDeviceCategory(audio_devices_t device);
+ 
++        static const char* HDMI_SPKR_STR;
++
++        //parameter indicates of HDMI speakers disabled from the Settings
++        bool mHdmiAudioDisabled;
++
++        //parameter indicates if HDMI plug in/out detected
++        bool mHdmiAudioEvent;
++
+ };
+ };
+-- 
+1.7.9.5
+

@@ -1,0 +1,27 @@
+From 525b9a79eff0757c1d429d71e7f7337b4dce711e Mon Sep 17 00:00:00 2001
+From: kalpana <kalpana@inforcecomputing.com>
+Date: Mon, 21 Jul 2014 17:52:05 +0530
+Subject: [PATCH] Bluetooth: Chnage in android.mk to overcome the bluetooth
+ build errors
+
+Change-Id: I423b66cf42a2c13c6a0f9e3ca43a78895d7244a7
+---
+ Android.mk |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/Android.mk b/Android.mk
+index bfca5ae..c00dfc8 100644
+--- a/Android.mk
++++ b/Android.mk
+@@ -9,7 +9,7 @@ else
+   bdroid_CFLAGS := -DHAS_NO_BDROID_BUILDCFG
+ endif
+ 
+-ifneq ($(call is-board-platform-in-list,msm8960 msm8930 apq8064),true)
++ifneq ($(call is-board-platform-in-list,msm8960 msm8930 apq8064 apq8084),true)
+  ifeq ($(TARGET_USE_SBC_DECODER),true)
+   bdroid_CFLAGS += -DBTA_AVK_INCLUDED
+  endif
+-- 
+1.7.9.5
+

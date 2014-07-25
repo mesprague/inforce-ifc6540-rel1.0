@@ -1,0 +1,27 @@
+From b62bc8e330fb35b5859a4d7d65f7d902cb2f0278 Mon Sep 17 00:00:00 2001
+From: kalpana <kalpana@inforcecomputing.com>
+Date: Mon, 21 Jul 2014 17:50:19 +0530
+Subject: [PATCH 3/3] CAF: Vendor Proprietary: Add vendor proprietary makefile
+ to link qualcomm proprietary binary blobs
+
+Change-Id: Idfe98528731b29ee12036fbc8b82cd5554e93b8c
+---
+ apq8084.mk |    2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/apq8084.mk b/apq8084.mk
+index 4278bd7..cc191a9 100644
+--- a/apq8084.mk
++++ b/apq8084.mk
+@@ -38,6 +38,8 @@ PRODUCT_PACKAGES += \
+     libqcomvoiceprocessing \
+     libqcompostprocbundle
+ 
++$(call inherit-product, vendor/qcom/proprietary/prebuilt/target/product/apq8084/prebuilt.mk)
++
+ # Feature definition files for apq8084
+ PRODUCT_COPY_FILES += \
+     system/bluetooth/data/main.le.conf:system/etc/bluetooth/main.conf \
+-- 
+1.7.9.5
+

@@ -1,0 +1,28 @@
+From 778516ea3e4cc360356e414955b7d1e13e591332 Mon Sep 17 00:00:00 2001
+From: Eugene Yasman <eyasman@codeaurora.org>
+Date: Thu, 3 Apr 2014 13:08:39 +0300
+Subject: [PATCH] Config: Force default orientation
+
+Lock the orientation and do not allow GUI rotations
+
+Change-Id: Icc4bfc82aad22393675093c1d5251e3758bec204
+---
+ core/res/res/values/config.xml |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/core/res/res/values/config.xml b/core/res/res/values/config.xml
+index 71912a5..0529412 100644
+--- a/core/res/res/values/config.xml
++++ b/core/res/res/values/config.xml
+@@ -1302,7 +1302,7 @@
+     <!-- Flag indicating that this device does not rotate and will always remain in its default
+          orientation. Activities that desire to run in a non-compatible orientation will be run
+          from an emulated display within the physical display. -->
+-    <bool name="config_forceDefaultOrientation">false</bool>
++    <bool name="config_forceDefaultOrientation">true</bool>
+ 
+     <!-- Default Gravity setting for the system Toast view. Equivalent to: Gravity.CENTER_HORIZONTAL | Gravity.BOTTOM -->
+     <integer name="config_toastDefaultGravity">0x00000051</integer>
+-- 
+1.7.9.5
+
